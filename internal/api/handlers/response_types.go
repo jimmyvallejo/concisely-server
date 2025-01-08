@@ -8,7 +8,6 @@ type StatusResponse struct {
 	Status string `json:"status"`
 }
 
-
 type ChatGTPResponse struct {
 	Provider string `json:"provider"`
 }
