@@ -20,8 +20,11 @@ func NewRouter(h *handlers.Handlers) *Router {
 
 func (r *Router) SetupRoutes() {
 
-	
+	// System Health
 	r.mux.HandleFunc("GET /healthz", handlers.HandlerReadiness)
+
+	// ChatGPT
+	r.mux.HandleFunc("GET /gpt-completion", r.handlers.ChatGPTCompletion)
 
 }
 

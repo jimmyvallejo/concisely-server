@@ -22,6 +22,7 @@ func main() {
 	}
 
 	port := os.Getenv("PORT")
+	OpenAiKey := os.Getenv("OPEN_AI_KEY")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:3000", "chrome-extension://*"},
@@ -30,7 +31,7 @@ func main() {
 		AllowCredentials: true,
 	})
 
-	h := handlers.NewHandlers()
+	h := handlers.NewHandlers(OpenAiKey)
 
 	router := routes.NewRouter(h)
 

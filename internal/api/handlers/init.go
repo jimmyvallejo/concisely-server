@@ -1,7 +1,11 @@
 package handlers
 
-type Handlers struct{}
+type Handlers struct{
+	GPTKEY string
+}
 
-func NewHandlers() *Handlers {
-	return &Handlers{}
+func NewHandlers(key string) *Handlers {
+	return &Handlers{
+		GPTKEY: key,
+	}
 }
