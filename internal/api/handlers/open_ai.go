@@ -3,7 +3,10 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	// "encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/sashabaranov/go-openai"
@@ -11,6 +14,7 @@ import (
 
 func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 	client := openai.NewClient(h.GPTKEY)
+	ctx := context.Background()
 
 	request := ScrapedDataRequest{}
 
@@ -22,59 +26,42 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 
 	formattedContent := formatScrapedContent(request)
 
-	data, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: openai.GPT4oMini,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: SystemPrompt,
-				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: formattedContent,
-				},
+	req := openai.ChatCompletionRequest{
+		Model: openai.GPT4oMini,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: SystemPrompt,
+			},
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: formattedContent,
 			},
 		},
-	)
-
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "failed to respond")
-		return
+		Stream: true,
 	}
 
-	fmt.Printf("Full response: %+v\n", data)
-
-	fmt.Printf("Message content: %s\n", data.Choices[0].Message.Content)
-}
-
-func (h *Handlers) ChatGPTSample(w http.ResponseWriter, r *http.Request) {
-	client := openai.NewClient(h.GPTKEY)
-
-	data, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: openai.GPT4oMini,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: "You are a helpful assistant that summarizes content clearly and concisely.",
-				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: SampleString,
-				},
-			},
-		},
-	)
-
+	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "failed to respond")
+		fmt.Printf("ChatCompletionStream error: %v\n", err)
 		return
 	}
+	defer stream.Close()
 
-	fmt.Printf("Full response: %+v\n", data)
+	fmt.Printf("Stream response: ")
 
-	fmt.Printf("Message content: %s\n", data.Choices[0].Message.Content)
+	for {
+		response, err := stream.Recv()
+		if errors.Is(err, io.EOF) {
+			fmt.Println("\nStream finished")
+			return
+		}
+
+		if err != nil {
+			fmt.Printf("\nStream error: %v\n", err)
+			return
+		}
+
+		fmt.Printf("%s", response.Choices[0].Delta.Content)
+	}
 }

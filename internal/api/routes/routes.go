@@ -24,7 +24,7 @@ func (r *Router) SetupRoutes() {
 	r.mux.HandleFunc("GET /healthz", handlers.HandlerReadiness)
 
 	// ChatGPT
-	r.mux.HandleFunc("GET /gpt-test", r.handlers.ChatGPTSample)
+	r.mux.HandleFunc("POST /gpt-stream", r.handlers.ChatGPTCompletion)
 
 }
 
