@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+
 	// "encoding/json"
 	"errors"
 	"fmt"
@@ -13,8 +14,17 @@ import (
 )
 
 func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
-	client := openai.NewClient(h.GPTKEY)
-	ctx := context.Background()
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Transfer-Encoding", "chunked")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		respondWithError(w, http.StatusInternalServerError, "streaming not supported")
+		return
+	}
 
 	request := ScrapedDataRequest{}
 
@@ -25,6 +35,9 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	formattedContent := formatScrapedContent(request)
+
+	client := openai.NewClient(h.GPTKEY)
+	ctx := context.Background()
 
 	req := openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
@@ -48,20 +61,19 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 	}
 	defer stream.Close()
 
-	fmt.Printf("Stream response: ")
-
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			fmt.Println("\nStream finished")
 			return
 		}
-
 		if err != nil {
-			fmt.Printf("\nStream error: %v\n", err)
+			fmt.Printf("Stream error: %v\n", err)
+			fmt.Fprintf(w, "Error: %v", err)
+			flusher.Flush()
 			return
 		}
 
-		fmt.Printf("%s", response.Choices[0].Delta.Content)
+		fmt.Fprint(w, response.Choices[0].Delta.Content)
+		flusher.Flush()
 	}
 }
