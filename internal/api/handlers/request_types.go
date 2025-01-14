@@ -18,3 +18,8 @@ type Link struct {
 	Text string `json:"text"`
 	Href string `json:"href"`
 }
+
+
+type ValidateKeyRequest struct {
+	APIKey string `json:"apiKey"`
+}

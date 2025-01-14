@@ -25,6 +25,7 @@ func (r *Router) SetupRoutes() {
 
 	// ChatGPT
 	r.mux.HandleFunc("POST /gpt-stream", r.handlers.ChatGPTCompletion)
+	r.mux.HandleFunc("POST /gpt-validate", r.handlers.ValidateOpenAIKey)
 
 }
 

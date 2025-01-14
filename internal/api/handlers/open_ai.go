@@ -77,3 +77,37 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 		flusher.Flush()
 	}
 }
+
+func (h *Handlers) ValidateOpenAIKey(w http.ResponseWriter, r *http.Request) {
+	request := ValidateKeyRequest{}
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON")
+		return
+	}
+
+	req, err := http.NewRequest("GET", "https://api.openai.com/v1/models", nil)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to create request")
+		return
+	}
+
+	req.Header.Add("Authorization", "Bearer "+request.APIKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to make request")
+		return
+	}
+	defer resp.Body.Close()
+
+
+	if resp.StatusCode != http.StatusOK {
+		respondWithError(w, resp.StatusCode, "Invalid API key")
+		return
+	}
+
+	respondNoBody(w, http.StatusOK)
+}
