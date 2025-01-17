@@ -7,7 +7,10 @@ type ScrapedDataRequest struct {
 	Links           []Link   `json:"links"`
 	MetaDescription *string  `json:"metaDescription"`
 	MainContent     *string  `json:"mainContent"`
+	ApiKey          string   `json:"apiKey"`
 }
+
+
 
 type Header struct {
 	Type string `json:"type"`
@@ -18,7 +21,6 @@ type Link struct {
 	Text string `json:"text"`
 	Href string `json:"href"`
 }
-
 
 type ValidateKeyRequest struct {
 	APIKey string `json:"apiKey"`

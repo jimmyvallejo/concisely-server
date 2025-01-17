@@ -36,7 +36,7 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 
 	formattedContent := formatScrapedContent(request)
 
-	client := openai.NewClient(h.GPTKEY)
+	client := openai.NewClient(request.ApiKey)
 	ctx := context.Background()
 
 	req := openai.ChatCompletionRequest{
@@ -102,7 +102,6 @@ func (h *Handlers) ValidateOpenAIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
-
 
 	if resp.StatusCode != http.StatusOK {
 		respondWithError(w, resp.StatusCode, "Invalid API key")
