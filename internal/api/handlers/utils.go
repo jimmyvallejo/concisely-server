@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/sashabaranov/go-openai"
 )
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
@@ -27,7 +29,6 @@ func respondNoBody(w http.ResponseWriter, code int) {
 
 func formatScrapedContent(req ScrapedDataRequest) string {
 	var formattedContent strings.Builder
-
 
 	formattedContent.WriteString(fmt.Sprintf("Title: %s\n\n", req.Title))
 
@@ -62,4 +63,19 @@ func formatScrapedContent(req ScrapedDataRequest) string {
 	}
 
 	return formattedContent.String()
+}
+
+func determineGPTModel(model string) string {
+
+	switch model {
+	case gpt4oMini:
+		return openai.GPT4oMini
+	case gpt4oStandard:
+		return openai.GPT4oLatest
+	case gpt4Old:
+		return openai.GPT4Turbo
+	default:
+		return openai.GPT4oMini
+	}
+
 }

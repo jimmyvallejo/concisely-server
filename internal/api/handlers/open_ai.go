@@ -40,7 +40,7 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	req := openai.ChatCompletionRequest{
-		Model: openai.GPT4oMini,
+		Model: determineGPTModel(request.Model),
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleSystem,

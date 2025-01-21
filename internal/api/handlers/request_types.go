@@ -8,9 +8,8 @@ type ScrapedDataRequest struct {
 	MetaDescription *string  `json:"metaDescription"`
 	MainContent     *string  `json:"mainContent"`
 	ApiKey          string   `json:"apiKey"`
+	Model           string   `json:"model"`
 }
-
-
 
 type Header struct {
 	Type string `json:"type"`
