@@ -7,3 +7,5 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/sashabaranov/go-openai v1.36.1
 )
+
+require github.com/liushuangls/go-anthropic/v2 v2.13.1 // indirect

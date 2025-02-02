@@ -77,5 +77,4 @@ func determineGPTModel(model string) string {
 	default:
 		return openai.GPT4oMini
 	}
-
 }
