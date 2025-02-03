@@ -7,7 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-   "github.com/openai/openai-go"
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/openai/openai-go"
 )
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
@@ -66,7 +67,6 @@ func formatScrapedContent(req ScrapedDataRequest) string {
 }
 
 func determineGPTModel(model string) string {
-
 	switch model {
 	case gpt4oMini:
 		return openai.ChatModelGPT4oMini
@@ -76,5 +76,18 @@ func determineGPTModel(model string) string {
 		return openai.ChatModelGPT4Turbo
 	default:
 		return openai.ChatModelGPT4oMini
+	}
+}
+
+func determineAnthropicModel(model string) string {
+	switch model {
+	case Claude3Haiku:
+		return anthropic.ModelClaude3_5HaikuLatest
+	case Claude3Opus:
+		return anthropic.ModelClaude3OpusLatest
+	case Claude3Point5Sonnet:
+		return anthropic.ModelClaude3_5SonnetLatest
+	default:
+		return anthropic.ModelClaude3_5SonnetLatest
 	}
 }

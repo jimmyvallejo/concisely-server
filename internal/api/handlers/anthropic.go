@@ -3,87 +3,83 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
-// func (h *Handlers) AnthropicCompletion(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "text/event-stream")
-// 	w.Header().Set("Transfer-Encoding", "chunked")
-// 	w.Header().Set("X-Content-Type-Options", "nosniff")
-// 	w.Header().Set("Cache-Control", "no-cache")
-// 	w.Header().Set("Connection", "keep-alive")
+func (h *Handlers) AnthropicCompletion(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Transfer-Encoding", "chunked")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
 
-// 	flusher, ok := w.(http.Flusher)
-// 	if !ok {
-// 		respondWithError(w, http.StatusInternalServerError, "streaming not supported")
-// 		return
-// 	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		respondWithError(w, http.StatusInternalServerError, "streaming not supported")
+		return
+	}
 
-// 	request := ScrapedDataRequest{}
+	var request ScrapedDataRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON")
+		return
+	}
 
-// 	err := json.NewDecoder(r.Body).Decode(&request)
-// 	if err != nil {
-// 		respondWithError(w, http.StatusBadRequest, "Invalid JSON")
-// 		return
-// 	}
+	formattedContent := formatScrapedContent(request)
 
-// 	formattedContent := formatScrapedContent(request)
+	client := anthropic.NewClient(
+		option.WithAPIKey(request.ApiKey),
+	)
 
-// 	client := anthropic.NewClient(request.ApiKey)
-// 	resp, err := client.CreateMessagesStream(context.Background(), anthropic.MessagesStreamRequest{
-// 		MessagesRequest: anthropic.MessagesRequest{
-// 			Model: anthropic.ModelClaude3Haiku20240307,
-// 			Messages: []anthropic.Message{
-// 				anthropic.NewUserTextMessage("What is your name?"),
-// 			},
-// 			MaxTokens: 1000,
-// 		},
-// 		OnContentBlockDelta: func(data anthropic.MessagesEventContentBlockDeltaData) {
-// 			fmt.Printf("Stream Content: %s\n", data.Delta.Text)
-// 		},
-// 	})
+	stream := client.Messages.NewStreaming(
+		r.Context(),
+		anthropic.MessageNewParams{
+			Model:     anthropic.F(determineAnthropicModel(request.Model)),
+			MaxTokens: anthropic.F(int64(1024)),
+			System: anthropic.F([]anthropic.TextBlockParam{
+				anthropic.NewTextBlock(SystemPrompt),
+			}),
+			Messages: anthropic.F([]anthropic.MessageParam{
+				anthropic.NewUserMessage(anthropic.NewTextBlock(formattedContent)),
+			}),
+		},
+	)
 
-// 	req := openai.ChatCompletionRequest{
-// 		Model: determineGPTModel(request.Model),
-// 		Messages: []openai.ChatCompletionMessage{
-// 			{
-// 				Role:    openai.ChatMessageRoleSystem,
-// 				Content: SystemPrompt,
-// 			},
-// 			{
-// 				Role:    openai.ChatMessageRoleUser,
-// 				Content: formattedContent,
-// 			},
-// 		},
-// 		Stream: true,
-// 	}
+	rateLimiter := time.NewTicker(10 * time.Millisecond)
+	defer rateLimiter.Stop()
 
-// 	stream, err := client.CreateChatCompletionStream(ctx, req)
-// 	if err != nil {
-// 		fmt.Printf("ChatCompletionStream error: %v\n", err)
-// 		return
-// 	}
-// 	defer stream.Close()
+	message := anthropic.Message{}
 
-// 	for {
-// 		response, err := stream.Recv()
-// 		if errors.Is(err, io.EOF) {
-// 			return
-// 		}
-// 		if err != nil {
-// 			fmt.Printf("Stream error: %v\n", err)
-// 			fmt.Fprintf(w, "Error: %v", err)
-// 			flusher.Flush()
-// 			return
-// 		}
+	for stream.Next() {
+		event := stream.Current()
+		message.Accumulate(event)
 
-// 		fmt.Fprint(w, response.Choices[0].Delta.Content)
-// 		flusher.Flush()
-// 	}
-// }
+		switch delta := event.Delta.(type) {
+		case anthropic.ContentBlockDeltaEventDelta:
+			if delta.Text != "" {
+				<-rateLimiter.C
+				fmt.Fprint(w, delta.Text)
+				flusher.Flush()
+			}
+		}
+	}
+
+	if err := stream.Err(); err != nil {
+		var apiErr *anthropic.Error
+		if errors.As(err, &apiErr) {
+			respondWithError(w, apiErr.StatusCode, fmt.Sprintf("Stream error: %v", apiErr))
+		} else {
+			respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Stream error: %v", err))
+		}
+		return
+	}
+}
 
 func (h *Handlers) ValidateAnthropicKey(w http.ResponseWriter, r *http.Request) {
 	request := ValidateKeyRequest{}
@@ -95,7 +91,7 @@ func (h *Handlers) ValidateAnthropicKey(w http.ResponseWriter, r *http.Request) 
 	}
 
 	client := anthropic.NewClient(
-		option.WithAPIKey(request.APIKey), 
+		option.WithAPIKey(request.APIKey),
 	)
 
 	_, err = client.Messages.New(context.TODO(), anthropic.MessageNewParams{

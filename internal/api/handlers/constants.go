@@ -6,6 +6,12 @@ var (
 	gpt4Old       = "gpt-4-old"
 )
 
+var (
+	Claude3Haiku        = "claude-3-haiku"
+	Claude3Opus         = "claude-3-opus"
+	Claude3Point5Sonnet = "claude-3.5-sonnet"
+)
+
 const SystemPrompt = `You are a specialized content summarizer. You will receive structured web content that may contain some or all of the following components:
 - Title: The main title of the content
 - Headers: Important section headings with their types

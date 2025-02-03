@@ -24,6 +24,7 @@ func (r *Router) SetupRoutes() {
 	r.mux.HandleFunc("GET /healthz", handlers.HandlerReadiness)
 
 	// Anthropic
+	r.mux.HandleFunc("POST /anthropic-stream", r.handlers.AnthropicCompletion)
 	r.mux.HandleFunc("POST /anthropic-validate", r.handlers.ValidateAnthropicKey)
 
 	// ChatGPT
