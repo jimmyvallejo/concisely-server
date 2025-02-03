@@ -41,7 +41,7 @@ func (h *Handlers) AnthropicCompletion(w http.ResponseWriter, r *http.Request) {
 		r.Context(),
 		anthropic.MessageNewParams{
 			Model:     anthropic.F(determineAnthropicModel(request.Model)),
-			MaxTokens: anthropic.F(int64(1024)),
+			MaxTokens: anthropic.F(int64(2024)),
 			System: anthropic.F([]anthropic.TextBlockParam{
 				anthropic.NewTextBlock(SystemPrompt),
 			}),

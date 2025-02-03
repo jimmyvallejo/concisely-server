@@ -31,6 +31,9 @@ func (r *Router) SetupRoutes() {
 	r.mux.HandleFunc("POST /gpt-stream", r.handlers.ChatGPTCompletion)
 	r.mux.HandleFunc("POST /gpt-validate", r.handlers.ValidateOpenAIKey)
 
+	// Deepseek
+	r.mux.HandleFunc("POST /deepseek-validate", r.handlers.ValidateDeepseekKey)
+
 }
 
 func (r *Router) GetHandler() http.Handler {
