@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sashabaranov/go-openai"
+   "github.com/openai/openai-go"
 )
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
@@ -69,12 +69,12 @@ func determineGPTModel(model string) string {
 
 	switch model {
 	case gpt4oMini:
-		return openai.GPT4oMini
+		return openai.ChatModelGPT4oMini
 	case gpt4oStandard:
-		return openai.GPT4oLatest
+		return openai.ChatModelGPT4o
 	case gpt4Old:
-		return openai.GPT4Turbo
+		return openai.ChatModelGPT4Turbo
 	default:
-		return openai.GPT4oMini
+		return openai.ChatModelGPT4oMini
 	}
 }

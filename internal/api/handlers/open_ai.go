@@ -1,16 +1,14 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
+	"time"
 
-	// "encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
 )
 
 func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
@@ -36,45 +34,40 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 
 	formattedContent := formatScrapedContent(request)
 
-	client := openai.NewClient(request.ApiKey)
-	ctx := context.Background()
+	client := openai.NewClient(option.WithAPIKey(request.ApiKey))
 
-	req := openai.ChatCompletionRequest{
-		Model: determineGPTModel(request.Model),
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: SystemPrompt,
-			},
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: formattedContent,
-			},
+	stream := client.Chat.Completions.NewStreaming(
+		r.Context(),
+		openai.ChatCompletionNewParams{
+			Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
+				openai.SystemMessage(SystemPrompt),
+				openai.UserMessage(formattedContent),
+			}),
+			Model: openai.F(determineGPTModel(request.Model)),
 		},
-		Stream: true,
-	}
+	)
 
-	stream, err := client.CreateChatCompletionStream(ctx, req)
-	if err != nil {
-		fmt.Printf("ChatCompletionStream error: %v\n", err)
-		return
-	}
-	defer stream.Close()
+	acc := openai.ChatCompletionAccumulator{}
 
-	for {
-		response, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			return
-		}
-		if err != nil {
-			fmt.Printf("Stream error: %v\n", err)
-			fmt.Fprintf(w, "Error: %v", err)
+	rateLimiter := time.NewTicker(25 * time.Millisecond)
+	defer rateLimiter.Stop()
+
+	for stream.Next() {
+		chunk := stream.Current()
+		acc.AddChunk(chunk)
+
+		if len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
+			<-rateLimiter.C
+			fmt.Fprint(w, chunk.Choices[0].Delta.Content)
 			flusher.Flush()
-			return
 		}
+	}
 
-		fmt.Fprint(w, response.Choices[0].Delta.Content)
+	if err := stream.Err(); err != nil {
+		fmt.Printf("Stream error: %v\n", err)
+		fmt.Fprintf(w, "Error: %v", err)
 		flusher.Flush()
+		return
 	}
 }
 
