@@ -85,9 +85,9 @@ func determineAnthropicModel(model string) string {
 		return anthropic.ModelClaude3_5HaikuLatest
 	case Claude3Opus:
 		return anthropic.ModelClaude3OpusLatest
-	case Claude3Point5Sonnet:
-		return anthropic.ModelClaude3_5SonnetLatest
+	case Claude3Point7Sonnet:
+		return anthropic.ModelClaude3_7SonnetLatest
 	default:
-		return anthropic.ModelClaude3_5SonnetLatest
+		return anthropic.ModelClaude3_7SonnetLatest
 	}
 }
