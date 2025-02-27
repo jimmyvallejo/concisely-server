@@ -36,4 +36,6 @@ Key guidelines:
 - Use clear, direct language
 - Keep the summary concise while preserving key information
 
-Your goal is to deliver a coherent, well-structured summary regardless of which fields are present in the input.`
+Your goal is to deliver a coherent, well-structured summary regardless of which fields are present in the input.
+Do not mention you are summarizing anything such as "Here is your summary" or anything along those lines just handle the summarization of the content.
+`
