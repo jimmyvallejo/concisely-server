@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"time"
 
 	"fmt"
@@ -24,17 +25,23 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request := ScrapedDataRequest{}
-
-	err := json.NewDecoder(r.Body).Decode(&request)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid JSON")
+		respondWithError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 
-	formattedContent := formatScrapedContent(request)
+	request, err := UnmarshalCompletionRequest(body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
-	client := openai.NewClient(option.WithAPIKey(request.ApiKey))
+	apiKey := request.GetAPIKey()
+	model := request.GetModel()
+	formattedContent := request.FormatContent()
+
+	client := openai.NewClient(option.WithAPIKey(apiKey))
 
 	stream := client.Chat.Completions.NewStreaming(
 		r.Context(),
@@ -43,7 +50,7 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 				openai.SystemMessage(SystemPrompt),
 				openai.UserMessage(formattedContent),
 			}),
-			Model: openai.F(determineGPTModel(request.Model)),
+			Model: openai.F(determineGPTModel(model)),
 		},
 	)
 

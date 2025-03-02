@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -25,22 +26,30 @@ func (h *Handlers) AnthropicCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request ScrapedDataRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid JSON")
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 
-	formattedContent := formatScrapedContent(request)
+	request, err := UnmarshalCompletionRequest(body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	apiKey := request.GetAPIKey()
+	model := request.GetModel()
+	formattedContent := request.FormatContent()
 
 	client := anthropic.NewClient(
-		option.WithAPIKey(request.ApiKey),
+		option.WithAPIKey(apiKey),
 	)
 
 	stream := client.Messages.NewStreaming(
 		r.Context(),
 		anthropic.MessageNewParams{
-			Model:     anthropic.F(determineAnthropicModel(request.Model)),
+			Model:     anthropic.F(determineAnthropicModel(model)),
 			MaxTokens: anthropic.F(int64(2024)),
 			System: anthropic.F([]anthropic.TextBlockParam{
 				anthropic.NewTextBlock(SystemPrompt),
