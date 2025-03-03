@@ -113,3 +113,7 @@ type Link struct {
 type ValidateKeyRequest struct {
 	APIKey string `json:"apiKey"`
 }
+
+type extractPDFRequest struct {
+	URL string `json:"url"`
+}

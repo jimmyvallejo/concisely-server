@@ -11,3 +11,7 @@ type StatusResponse struct {
 type ChatGTPResponse struct {
 	Provider string `json:"provider"`
 }
+
+type ExtractedPDFResponse struct {
+	Content string `json:"content"`
+}
