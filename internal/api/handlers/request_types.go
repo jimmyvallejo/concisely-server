@@ -4,13 +4,6 @@ import (
 	"fmt"
 	"strings"
 )
-
-type CompletionRequest interface {
-	GetAPIKey() string
-	GetModel() string
-	FormatContent() string
-}
-
 type ScrapedDataRequest struct {
 	Title           string   `json:"title"`
 	Headers         []Header `json:"headers"`
@@ -31,21 +24,6 @@ func (r *ScrapedDataRequest) GetModel() string {
 	return r.Model
 }
 
-type ScrapedDataRequestPDF struct {
-	Title   string  `json:"title"`
-	Content *string `json:"mainContent"`
-	ApiKey  string  `json:"apiKey"`
-	Model   string  `json:"model"`
-	Type    string  `json:"type"`
-}
-
-func (r *ScrapedDataRequestPDF) GetAPIKey() string {
-	return r.ApiKey
-}
-
-func (r *ScrapedDataRequestPDF) GetModel() string {
-	return r.Model
-}
 
 func (r *ScrapedDataRequest) FormatContent() string {
 	var formattedContent strings.Builder
@@ -85,21 +63,6 @@ func (r *ScrapedDataRequest) FormatContent() string {
 	return formattedContent.String()
 }
 
-func (r *ScrapedDataRequestPDF) FormatContent() string {
-	var formattedContent strings.Builder
-
-	formattedContent.WriteString(fmt.Sprintf("PDF Document: %s\n\n", r.Title))
-
-	if r.Content != nil && *r.Content != "" {
-		formattedContent.WriteString("Content:\n")
-		formattedContent.WriteString(*r.Content)
-	} else {
-		formattedContent.WriteString("No content available in this PDF.")
-	}
-
-	return formattedContent.String()
-}
-
 type Header struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
@@ -114,6 +77,6 @@ type ValidateKeyRequest struct {
 	APIKey string `json:"apiKey"`
 }
 
-type extractPDFRequest struct {
+type GeminiPDFRequest struct {
 	URL string `json:"url"`
 }

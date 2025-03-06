@@ -32,7 +32,8 @@ func (h *Handlers) AnthropicCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request, err := UnmarshalCompletionRequest(body)
+	var request ScrapedDataRequest
+	err = json.Unmarshal(body, &request)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return

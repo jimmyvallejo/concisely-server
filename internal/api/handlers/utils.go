@@ -2,42 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/openai/openai-go"
 )
-
-func UnmarshalCompletionRequest(data []byte) (CompletionRequest, error) {
-	var requestType struct {
-		Type string `json:"type"`
-	}
-
-	if err := json.Unmarshal(data, &requestType); err != nil {
-		return nil, fmt.Errorf("failed to parse request type: %w", err)
-	}
-
-	switch requestType.Type {
-	case "web":
-		var req ScrapedDataRequest
-		if err := json.Unmarshal(data, &req); err != nil {
-			return nil, fmt.Errorf("failed to parse scraped data request: %w", err)
-		}
-		return &req, nil
-
-	case "pdf":
-		var req ScrapedDataRequestPDF
-		if err := json.Unmarshal(data, &req); err != nil {
-			return nil, fmt.Errorf("failed to parse prompt request: %w", err)
-		}
-		return &req, nil
-
-	default:
-		return nil, fmt.Errorf("unknown request type: %s", requestType.Type)
-	}
-}
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
