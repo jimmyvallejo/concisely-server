@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"io"
 	"time"
 
 	"fmt"
@@ -25,16 +24,9 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Failed to read request body")
-		return
-	}
-
 	var request ScrapedDataRequest
-	err = json.Unmarshal(body, &request)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Failed to read request body: "+err.Error())
 		return
 	}
 
@@ -48,7 +40,7 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 		r.Context(),
 		openai.ChatCompletionNewParams{
 			Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
-				openai.SystemMessage(SystemPrompt),
+				openai.SystemMessage(systemPromptWeb),
 				openai.UserMessage(formattedContent),
 			}),
 			Model: openai.F(determineGPTModel(model)),

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 )
+
 type ScrapedDataRequest struct {
 	Title           string   `json:"title"`
 	Headers         []Header `json:"headers"`
@@ -23,7 +24,6 @@ func (r *ScrapedDataRequest) GetAPIKey() string {
 func (r *ScrapedDataRequest) GetModel() string {
 	return r.Model
 }
-
 
 func (r *ScrapedDataRequest) FormatContent() string {
 	var formattedContent strings.Builder
@@ -78,5 +78,6 @@ type ValidateKeyRequest struct {
 }
 
 type GeminiPDFRequest struct {
-	URL string `json:"url"`
+	URL    string `json:"url"`
+	ApiKey string `json:"apiKey"`
 }

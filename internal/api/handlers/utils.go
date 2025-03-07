@@ -41,11 +41,11 @@ func determineGPTModel(model string) string {
 
 func determineAnthropicModel(model string) string {
 	switch model {
-	case Claude3Haiku:
+	case claude3Haiku:
 		return anthropic.ModelClaude3_5HaikuLatest
-	case Claude3Opus:
+	case claude3Opus:
 		return anthropic.ModelClaude3OpusLatest
-	case Claude3Point7Sonnet:
+	case claude3Point7Sonnet:
 		return anthropic.ModelClaude3_7SonnetLatest
 	default:
 		return anthropic.ModelClaude3_7SonnetLatest

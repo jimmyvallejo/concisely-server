@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -26,16 +25,9 @@ func (h *Handlers) AnthropicCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Failed to read request body")
-		return
-	}
-
 	var request ScrapedDataRequest
-	err = json.Unmarshal(body, &request)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Failed to read request body: "+err.Error())
 		return
 	}
 
@@ -53,7 +45,7 @@ func (h *Handlers) AnthropicCompletion(w http.ResponseWriter, r *http.Request) {
 			Model:     anthropic.F(determineAnthropicModel(model)),
 			MaxTokens: anthropic.F(int64(2024)),
 			System: anthropic.F([]anthropic.TextBlockParam{
-				anthropic.NewTextBlock(SystemPrompt),
+				anthropic.NewTextBlock(systemPromptWeb),
 			}),
 			Messages: anthropic.F([]anthropic.MessageParam{
 				anthropic.NewUserMessage(anthropic.NewTextBlock(formattedContent)),
