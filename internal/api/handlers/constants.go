@@ -86,4 +86,6 @@ When summarizing a document, follow these detailed instructions:
 
 This summary should be significantly more comprehensive than a typical executive summary, capturing the full breadth and depth of the original document while making it more accessible. Your goal is to create a summary so thorough that it could substitute for the original document in many use cases.
 
+Do not mention you are summarizing anything such as "Here is your summary" or anything along those lines - just provide the summarization directly.
+
 ALWAYS RETURN OUTPUT IN MARKDOWN FORMAT - VERY IMPORTANT`
