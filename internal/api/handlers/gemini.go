@@ -14,7 +14,6 @@ import (
 	"google.golang.org/api/option"
 )
 
-
 func (h *Handlers) GeminiParsePDF(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Transfer-Encoding", "chunked")
@@ -47,12 +46,11 @@ func (h *Handlers) GeminiParsePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	messageChan := make(chan string, 100) 
+	messageChan := make(chan string, 100)
 	doneChan := make(chan bool, 1)
 	errorChan := make(chan error, 1)
 
 	go processPDF(ctx, request, messageChan, doneChan, errorChan)
-
 
 	go func() {
 		defer func() {
@@ -90,7 +88,7 @@ func (h *Handlers) GeminiParsePDF(w http.ResponseWriter, r *http.Request) {
 			case msg := <-messageChan:
 				chunkCount++
 				log.Printf("CHUNK #%d: %s", chunkCount, msg)
-				
+
 				writeSSE(w, flusher, msg)
 
 			case <-time.After(30 * time.Second):
@@ -179,13 +177,11 @@ func processPDF(ctx context.Context, request GeminiPDFRequest, messageChan chan<
 	}
 }
 
-
 func downloadPDF(ctx context.Context, url string) ([]byte, error) {
-	
+
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 	}
-
 
 	pdfReq, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -202,6 +198,35 @@ func downloadPDF(ctx context.Context, url string) ([]byte, error) {
 		return nil, fmt.Errorf("download failed with status: %d", pdfResp.StatusCode)
 	}
 
-	const maxPDFSize = 50 * 1024 * 1024 
+	const maxPDFSize = 50 * 1024 * 1024
 	return io.ReadAll(io.LimitReader(pdfResp.Body, maxPDFSize))
+}
+
+func (h *Handlers) ValidateGeminiKey(w http.ResponseWriter, r *http.Request) {
+	request := ValidateKeyRequest{}
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON")
+		return
+	}
+
+	client, err := genai.NewClient(context.Background(), option.WithAPIKey(request.APIKey))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to create Gemini client")
+		return
+	}
+	defer client.Close()
+
+	model := client.GenerativeModel("gemini-2.0-flash")
+	model.SetMaxOutputTokens(1)
+
+	_, err = model.GenerateContent(context.Background(), genai.Text("What is a quaternion?"))
+
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid API key")
+		return
+	}
+
+	respondNoBody(w, http.StatusOK)
 }
