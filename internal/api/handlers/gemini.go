@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/generative-ai-go/genai"
@@ -59,8 +60,6 @@ func (h *Handlers) GeminiParsePDF(w http.ResponseWriter, r *http.Request) {
 			}
 		}()
 
-		writeSSE(w, flusher, "Connection established. Processing started...")
-
 		var errorSent bool
 		chunkCount := 0
 
@@ -81,7 +80,6 @@ func (h *Handlers) GeminiParsePDF(w http.ResponseWriter, r *http.Request) {
 				return
 
 			case <-doneChan:
-				writeSSE(w, flusher, "[DONE]")
 				log.Printf("PDF processing complete. Sent %d chunks in total.", chunkCount)
 				return
 
@@ -105,7 +103,7 @@ func writeSSE(w http.ResponseWriter, flusher http.Flusher, message string) {
 		return
 	}
 
-	_, err := fmt.Fprintf(w, "data: %s\n\n", message)
+	_, err := fmt.Fprintf(w, message)
 	if err != nil {
 		log.Printf("Error writing to response: %v", err)
 		return
@@ -130,15 +128,13 @@ func processPDF(ctx context.Context, request GeminiPDFRequest, messageChan chan<
 	}
 	defer client.Close()
 
-	messageChan <- "API connection established. Downloading PDF..."
+	log.Println("Downloading PDF...")
 
 	pdfBytes, err := downloadPDF(ctx, request.URL)
 	if err != nil {
 		errorChan <- fmt.Errorf("failed to download PDF: %v", err)
 		return
 	}
-
-	messageChan <- fmt.Sprintf("PDF downloaded (%d bytes). Processing with Gemini...", len(pdfBytes))
 
 	model := client.GenerativeModel("gemini-2.0-flash")
 	req := []genai.Part{
@@ -147,6 +143,8 @@ func processPDF(ctx context.Context, request GeminiPDFRequest, messageChan chan<
 	}
 
 	iter := model.GenerateContentStream(ctx, req...)
+
+	var contentBuffer strings.Builder
 
 	for {
 		select {
@@ -157,6 +155,9 @@ func processPDF(ctx context.Context, request GeminiPDFRequest, messageChan chan<
 		default:
 			resp, err := iter.Next()
 			if err == iterator.Done {
+				if contentBuffer.Len() > 0 {
+					messageChan <- contentBuffer.String()
+				}
 				doneChan <- true
 				return
 			}
@@ -169,7 +170,24 @@ func processPDF(ctx context.Context, request GeminiPDFRequest, messageChan chan<
 				if c.Content != nil {
 					for _, part := range c.Content.Parts {
 						partStr := fmt.Sprintf("%v", part)
-						messageChan <- partStr
+
+						cleanPart := strings.TrimSpace(partStr)
+
+						if cleanPart == "" {
+							continue
+						}
+
+						contentBuffer.WriteString(cleanPart)
+
+						if contentBuffer.Len() > 100 && (strings.HasSuffix(cleanPart, ".") ||
+							strings.HasSuffix(cleanPart, "!") ||
+							strings.HasSuffix(cleanPart, "?") ||
+							strings.HasSuffix(cleanPart, "\n") ||
+							strings.Contains(cleanPart, "\n\n")) {
+
+							messageChan <- contentBuffer.String()
+							contentBuffer.Reset()
+						}
 					}
 				}
 			}

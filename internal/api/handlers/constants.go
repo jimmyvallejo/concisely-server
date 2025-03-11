@@ -88,4 +88,10 @@ This summary should be significantly more comprehensive than a typical executive
 
 Do not mention you are summarizing anything such as "Here is your summary" or anything along those lines - just provide the summarization directly.
 
-ALWAYS RETURN OUTPUT IN MARKDOWN FORMAT - VERY IMPORTANT`
+ALWAYS RETURN OUTPUT IN MARKDOWN FORMAT - VERY IMPORTANT
+
+Double check formatting to make sure all new lines are accounted for correctly and all markdown is correct - VERY IMPORTANT!!
+
+`
+
+

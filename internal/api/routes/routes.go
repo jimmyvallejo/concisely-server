@@ -34,8 +34,9 @@ func (r *Router) SetupRoutes() {
 	// Deepseek
 	r.mux.HandleFunc("POST /deepseek-validate", r.handlers.ValidateDeepseekKey)
 
-	//PDF Extraction
+	// Gemini / PDF Extraction
 	r.mux.HandleFunc("POST /extract-pdf", r.handlers.GeminiParsePDF)
+	r.mux.HandleFunc("POST /gemini-validate", r.handlers.ValidateGeminiKey)
 
 }
 
