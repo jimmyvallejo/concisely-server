@@ -80,13 +80,10 @@ func (h *Handlers) GeminiParsePDF(w http.ResponseWriter, r *http.Request) {
 				return
 
 			case <-doneChan:
-				log.Printf("PDF processing complete. Sent %d chunks in total.", chunkCount)
 				return
 
 			case msg := <-messageChan:
 				chunkCount++
-				log.Printf("CHUNK #%d: %s", chunkCount, msg)
-
 				writeSSE(w, flusher, msg)
 
 			case <-time.After(30 * time.Second):
@@ -165,29 +162,13 @@ func processPDF(ctx context.Context, request GeminiPDFRequest, messageChan chan<
 				errorChan <- fmt.Errorf("error generating content: %v", err)
 				return
 			}
-
 			for _, c := range resp.Candidates {
 				if c.Content != nil {
 					for _, part := range c.Content.Parts {
 						partStr := fmt.Sprintf("%v", part)
-
-						cleanPart := strings.TrimSpace(partStr)
-
-						if cleanPart == "" {
-							continue
-						}
-
-						contentBuffer.WriteString(cleanPart)
-
-						if contentBuffer.Len() > 100 && (strings.HasSuffix(cleanPart, ".") ||
-							strings.HasSuffix(cleanPart, "!") ||
-							strings.HasSuffix(cleanPart, "?") ||
-							strings.HasSuffix(cleanPart, "\n") ||
-							strings.Contains(cleanPart, "\n\n")) {
-
-							messageChan <- contentBuffer.String()
-							contentBuffer.Reset()
-						}
+						messageChan <- partStr
+						time.Sleep(100 * time.Millisecond)
+						contentBuffer.WriteString(partStr)
 					}
 				}
 			}
