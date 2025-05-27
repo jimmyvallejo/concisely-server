@@ -39,11 +39,11 @@ func (h *Handlers) ChatGPTCompletion(w http.ResponseWriter, r *http.Request) {
 	stream := client.Chat.Completions.NewStreaming(
 		r.Context(),
 		openai.ChatCompletionNewParams{
-			Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
+			Messages: []openai.ChatCompletionMessageParamUnion{
 				openai.SystemMessage(systemPromptWeb),
 				openai.UserMessage(formattedContent),
-			}),
-			Model: openai.F(determineGPTModel(model)),
+			},
+			Model: determineGPTModel(model),
 		},
 	)
 

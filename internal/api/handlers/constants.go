@@ -1,15 +1,15 @@
 package handlers
 
 var (
-	gpt4oMini     = "gpt-4o-mini"
-	gpt4oStandard = "gpt-4o-standard"
-	gpt4Old       = "gpt-4-old"
+	gpt4oMini    = "gpt-4o-mini"
+	gpt4Point1   = "gpt-4.1"
+	gptReasoning = "gpt-o4-mini"
 )
 
 var (
-	claude3Haiku        = "claude-3-haiku"
-	claude3Opus         = "claude-3-opus"
-	claude3Point7Sonnet = "claude-3.7-sonnet"
+	claude3Point5Haiku = "claude-3.5-haiku"
+	claude4Opus        = "claude-4-opus"
+	claude4Sonnet      = "claude-4-sonnet"
 )
 
 const systemPromptWeb = `You are a specialized content summarizer. You will receive structured content from websites.
@@ -93,5 +93,3 @@ ALWAYS RETURN OUTPUT IN MARKDOWN FORMAT - VERY IMPORTANT
 Double check formatting to make sure all new lines are accounted for correctly and all markdown is correct - VERY IMPORTANT!!
 
 `
-
-

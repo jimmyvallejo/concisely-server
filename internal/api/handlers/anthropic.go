@@ -42,14 +42,14 @@ func (h *Handlers) AnthropicCompletion(w http.ResponseWriter, r *http.Request) {
 	stream := client.Messages.NewStreaming(
 		r.Context(),
 		anthropic.MessageNewParams{
-			Model:     anthropic.F(determineAnthropicModel(model)),
-			MaxTokens: anthropic.F(int64(2024)),
-			System: anthropic.F([]anthropic.TextBlockParam{
-				anthropic.NewTextBlock(systemPromptWeb),
-			}),
-			Messages: anthropic.F([]anthropic.MessageParam{
+			Model:     determineAnthropicModel(model),
+			MaxTokens: int64(2024),
+			System: []anthropic.TextBlockParam{
+				{Text: systemPromptWeb},
+			},
+			Messages: []anthropic.MessageParam{
 				anthropic.NewUserMessage(anthropic.NewTextBlock(formattedContent)),
-			}),
+			},
 		},
 	)
 
@@ -62,12 +62,15 @@ func (h *Handlers) AnthropicCompletion(w http.ResponseWriter, r *http.Request) {
 		event := stream.Current()
 		message.Accumulate(event)
 
-		switch delta := event.Delta.(type) {
-		case anthropic.ContentBlockDeltaEventDelta:
-			if delta.Text != "" {
-				<-rateLimiter.C
-				fmt.Fprint(w, delta.Text)
-				flusher.Flush()
+		switch eventVariant := event.AsAny().(type) {
+		case anthropic.ContentBlockDeltaEvent:
+			switch deltaVariant := eventVariant.Delta.AsAny().(type) {
+			case anthropic.TextDelta:
+				if deltaVariant.Text != "" {
+					<-rateLimiter.C
+					fmt.Fprint(w, deltaVariant.Text)
+					flusher.Flush()
+				}
 			}
 		}
 	}
@@ -84,29 +87,30 @@ func (h *Handlers) AnthropicCompletion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) ValidateAnthropicKey(w http.ResponseWriter, r *http.Request) {
+
 	request := ValidateKeyRequest{}
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid JSON")
+		respondWithError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
 		return
 	}
 
 	client := anthropic.NewClient(
 		option.WithAPIKey(request.APIKey),
 	)
-
 	_, err = client.Messages.New(context.TODO(), anthropic.MessageNewParams{
-		Model:     anthropic.F(anthropic.ModelClaude3_5HaikuLatest),
-		MaxTokens: anthropic.F(int64(1)),
-		Messages: anthropic.F([]anthropic.MessageParam{
-			anthropic.NewUserMessage(anthropic.NewTextBlock("What is a quaternion?")),
-		}),
+		MaxTokens: 1024,
+		Messages: []anthropic.MessageParam{{
+			Content: []anthropic.ContentBlockParamUnion{{
+				OfText: &anthropic.TextBlockParam{Text: "What is a quaternion?"},
+			}},
+			Role: anthropic.MessageParamRoleUser,
+		}},
+		Model: anthropic.ModelClaude3_7SonnetLatest,
 	})
-
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid API key")
-		return
+		panic(err.Error())
 	}
 
 	respondNoBody(w, http.StatusOK)

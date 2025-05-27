@@ -30,25 +30,24 @@ func determineGPTModel(model string) string {
 	switch model {
 	case gpt4oMini:
 		return openai.ChatModelGPT4oMini
-	case gpt4oStandard:
-		return openai.ChatModelGPT4o
-	case gpt4Old:
-		return openai.ChatModelGPT4Turbo
+	case gpt4Point1:
+		return openai.ChatModelGPT4_1
+	case gptReasoning:
+		return openai.ChatModelO4Mini
 	default:
 		return openai.ChatModelGPT4oMini
 	}
 }
 
-func determineAnthropicModel(model string) string {
+func determineAnthropicModel(model string) anthropic.Model {
 	switch model {
-	case claude3Haiku:
+	case claude3Point5Haiku:
 		return anthropic.ModelClaude3_5HaikuLatest
-	case claude3Opus:
-		return anthropic.ModelClaude3OpusLatest
-	case claude3Point7Sonnet:
-		return anthropic.ModelClaude3_7SonnetLatest
+	case claude4Opus:
+		return anthropic.ModelClaudeOpus4_0
+	case claude4Sonnet:
+		return anthropic.ModelClaudeSonnet4_0
 	default:
-		return anthropic.ModelClaude3_7SonnetLatest
+		return anthropic.ModelClaudeSonnet4_0
 	}
 }
-
